@@ -1,7 +1,10 @@
 use core::ops;
 use itertools::Itertools;
 use pyo3::prelude::*;
+use pyo3::types::PyType;
 use std::sync::{Arc, Mutex};
+
+use crate::matrix::matrix_bin::MatrixBin;
 
 // Represent a multi-variate polynomial in GF(2)
 
@@ -24,10 +27,6 @@ impl ExpressionBinConfig {
         }
     }
 
-    // pub fn to_matrix(&self, equations: Vec<ExpressionBin>) {
-    //     // TODO: return matrix and target vector
-    // }
-
     pub fn gen(&mut self, name: String) -> ExpressionBin {
         let mut variables = self.variables.lock().unwrap();
         let index = variables
@@ -48,7 +47,7 @@ impl ExpressionBinConfig {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, FromPyObject)]
 #[pyclass(frozen)]
 pub struct ExpressionBin {
     // Each element contains 64 variables coefficients, for performance
@@ -173,6 +172,38 @@ impl ExpressionBin {
 
     pub fn degree(&self) -> u32 {
         self.coeffs.iter().any(|c| *c != 0) as u32
+    }
+
+    #[classmethod]
+    pub fn to_matrix(
+        _cls: &Bound<PyType>,
+        equations: Vec<Bound<ExpressionBin>>,
+    ) -> (MatrixBin, Vec<bool>) {
+        let cols = equations[0].borrow().config.variables.lock().unwrap().len();
+        let stride = (cols + 63) / 64;
+        println!("{:?}", stride);
+        (
+            MatrixBin {
+                cols: cols,
+                rows: equations.len(),
+                cells: equations
+                    .iter()
+                    .map(|e| {
+                        let e = e.borrow();
+                        if e.coeffs.len() == stride {
+                            return e.coeffs.clone();
+                        }
+                        e.coeffs
+                            .iter()
+                            .copied()
+                            .chain(vec![0u64; stride - e.coeffs.len()].iter().copied())
+                            .collect()
+                    })
+                    .flatten()
+                    .collect(),
+            },
+            equations.iter().map(|e| e.borrow().constant).collect(),
+        )
     }
 }
 

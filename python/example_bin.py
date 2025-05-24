@@ -8,7 +8,6 @@ print("Start benchmark...")
 config = ExpressionBinConfig()
 a = config.gen("a")
 b = config.gen("b")
-[config.gen(f"c{i}") for i in range(128)]
 
 
 assert str(a) == "a"
@@ -20,6 +19,18 @@ assert bool(a * 1)
 assert not bool(a * 0)
 assert not bool(a ^ a)
 assert bool(a ^ a ^ 1)
+
+
+m, t = ExpressionBin.to_matrix([a ^ b, a ^ b ^ 1])
+assert m.solve_right(t) is None
+
+m, t = ExpressionBin.to_matrix([a ^ b, a ^ 1])
+assert m.solve_right(t) == [True, True]
+
+# Add a lot of dummy variables
+cs = [config.gen(f"c{i}") for i in range(230)]
+m, t = ExpressionBin.to_matrix([a ^ b, a ^ 1, cs[9] ^ 1])
+assert m.solve_right(t) == [True, True] + [False] * 9 + [True] + [False] * 220
 
 assert a.degree() == 1
 assert (a + b + 1).degree() == 1

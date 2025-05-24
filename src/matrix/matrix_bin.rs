@@ -10,32 +10,13 @@ use std::ops::Mul;
 #[derive(Debug, Clone)]
 #[pyclass(frozen)]
 pub struct MatrixBin {
-    cols: usize,
-    rows: usize,
-    cells: Vec<u64>,
+    pub cols: usize,
+    pub rows: usize,
+    pub cells: Vec<u64>,
 }
 
 #[pymethods]
 impl MatrixBin {
-    #[classmethod]
-    pub fn from_word_lists(_cls: &Bound<PyType>, lines: Vec<Vec<u64>>) -> Self {
-        let rows = lines.len();
-        let stride = lines.iter().map(|line| line.len()).max().unwrap_or(0);
-        let mut cells = vec![0u64; rows * stride];
-
-        for (i, line) in lines.into_iter().enumerate() {
-            for (j, val) in line.into_iter().enumerate() {
-                cells[i * stride + j] = val;
-            }
-        }
-
-        MatrixBin {
-            cols: stride * 64,
-            rows,
-            cells,
-        }
-    }
-
     #[classmethod]
     pub fn from_list(_cls: &Bound<PyType>, lines: Vec<Vec<u8>>) -> Self {
         let rows = lines.len();
@@ -125,6 +106,7 @@ impl MatrixBin {
     }
 
     pub fn echelon_form(&self, target: Vec<bool>) -> (MatrixBin, Vec<bool>) {
+        assert_eq!(target.len(), self.rows);
         let mut aug = self.clone();
         let n = self.rows;
         let stride = (self.cols + 63) / 64;
@@ -177,9 +159,11 @@ impl MatrixBin {
         let mut res = vec![false; n_unknowns];
 
         for i in (0..n_unknowns).rev() {
-            let row = &echelon.cells[i * stride..(i + 1) * stride];
+            let row_i = i.min(self.rows - 1);
 
-            let mut sum = target[i];
+            let row = &echelon.cells[row_i * stride..(row_i + 1) * stride];
+
+            let mut sum = target[row_i];
             for j in (i + 1)..n_unknowns {
                 let bit = (row[j / 64] >> (j % 64)) & 1;
                 if bit == 1 {
@@ -189,7 +173,7 @@ impl MatrixBin {
 
             let pivot = (row[i / 64] >> (i % 64)) & 1;
             if pivot == 0 {
-                if sum {
+                if sum && i == row_i {
                     return None;
                 }
             } else {
