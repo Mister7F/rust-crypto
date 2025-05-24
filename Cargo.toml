@@ -1,0 +1,23 @@
+# Compile with this env for better performance
+# RUSTFLAGS="-C target-cpu=native"
+
+[package]
+name = "rust_crypto"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "rust_crypto"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = "0.25.0"
+hex = "0.4.3"
+rayon = "1.7.0"
+itertools = "0.10.5"
+rand = "0.8"
+
+[profile.release]
+opt-level = 3
+debug = true
+incremental = true
