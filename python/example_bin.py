@@ -2,6 +2,7 @@ from rust_crypto import ExpressionBin, ExpressionBinConfig, MatrixBin
 from sage import all_cmdline as sage
 import random
 import time
+from utils import assert_raises
 
 print("Start benchmark...")
 
@@ -22,7 +23,8 @@ assert bool(a ^ a ^ 1)
 
 
 m, t = ExpressionBin.to_matrix([a ^ b, a ^ b ^ 1])
-assert m.solve_right(t) is None
+with assert_raises(ValueError, "Impossible system"):
+    m.solve_right(t)
 
 m, t = ExpressionBin.to_matrix([a ^ b, a ^ 1])
 assert m.solve_right(t) == [True, True]
@@ -111,6 +113,12 @@ assert all(
     a == b for line_a, line_b in zip(S_s, S_c.to_list()) for a, b in zip(line_a, line_b)
 )
 
+with assert_raises(ValueError, "Dimensions not compatible"):
+    MatrixBin.from_list([[0, 0, 0], [0, 0, 0]]) + MatrixBin.from_list([[0, 0, 0]])
+
+with assert_raises(ValueError, "Dimensions not compatible"):
+    MatrixBin.from_list([[0, 0, 0], [0, 0, 0]]) + MatrixBin.from_list([[0], [0]])
+
 ###########
 # Loading #
 ###########
@@ -175,6 +183,9 @@ R_c = A_c * B_c
 print("MatrixBin", time.time() - start)
 
 assert [list(map(int, line)) for line in R_s] == R_c.to_list()
+
+with assert_raises(ValueError, "Dimensions not compatible"):
+    MatrixBin.from_list([[0, 0, 0], [0, 0, 0]]) + MatrixBin.from_list([[0, 0, 0]])
 
 ###########
 # Echelon #

@@ -1,5 +1,6 @@
 use crate::utils::bits_to_u64;
 use crate::utils::u64_to_bits;
+use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::PyType;
 use rayon::prelude::*;
@@ -49,12 +50,18 @@ impl MatrixBin {
             .collect()
     }
 
-    pub fn __add__(&self, rhs: &MatrixBin) -> MatrixBin {
-        self.add(rhs)
+    pub fn __add__(&self, rhs: &MatrixBin) -> PyResult<MatrixBin> {
+        match self.add(rhs) {
+            Ok(result) => Ok(result),
+            Err(error) => Err(PyValueError::new_err(error)),
+        }
     }
 
-    pub fn __mul__(&self, rhs: &MatrixBin) -> MatrixBin {
-        self.mul(rhs)
+    pub fn __mul__(&self, rhs: &MatrixBin) -> PyResult<MatrixBin> {
+        match self.mul(rhs) {
+            Ok(result) => Ok(result),
+            Err(error) => Err(PyValueError::new_err(error)),
+        }
     }
 
     pub fn inverse(&self) -> Option<MatrixBin> {
@@ -105,8 +112,13 @@ impl MatrixBin {
         Some(identity)
     }
 
-    pub fn echelon_form(&self, target: Vec<bool>) -> (MatrixBin, Vec<bool>) {
-        assert_eq!(target.len(), self.rows);
+    pub fn echelon_form(&self, target: Vec<bool>) -> PyResult<(MatrixBin, Vec<bool>)> {
+        if target.len() != self.rows {
+            return Err(PyValueError::new_err(
+                "Target size does not match the number of rows",
+            ));
+        }
+
         let mut aug = self.clone();
         let n = self.rows;
         let stride = (self.cols + 63) / 64;
@@ -143,17 +155,13 @@ impl MatrixBin {
                 });
         }
 
-        (aug, target)
+        Ok((aug, target))
     }
 
-    pub fn solve_right(&self, target: Vec<u8>) -> Option<Vec<bool>> {
+    pub fn solve_right(&self, target: Vec<u8>) -> PyResult<Vec<bool>> {
         let target: Vec<bool> = target.iter().map(|t| t & 1 != 0).collect();
 
-        if target.len() != self.rows {
-            return None;
-        }
-
-        let (echelon, target) = self.echelon_form(target);
+        let (echelon, target) = self.echelon_form(target)?;
         let stride = (self.cols + 63) / 64;
         let n_unknowns = self.cols;
         let mut res = vec![false; n_unknowns];
@@ -174,14 +182,14 @@ impl MatrixBin {
             let pivot = (row[i / 64] >> (i % 64)) & 1;
             if pivot == 0 {
                 if sum && i == row_i {
-                    return None;
+                    return Err(PyValueError::new_err("Impossible system"));
                 }
             } else {
                 res[i] = sum;
             }
         }
 
-        Some(res)
+        Ok(res)
     }
 }
 
@@ -210,10 +218,12 @@ impl MatrixBin {
 }
 
 impl ops::Mul<&MatrixBin> for &MatrixBin {
-    type Output = MatrixBin;
+    type Output = Result<MatrixBin, String>;
 
-    fn mul(self, rhs: &MatrixBin) -> MatrixBin {
-        assert_eq!(self.cols, rhs.rows);
+    fn mul(self, rhs: &MatrixBin) -> Result<MatrixBin, String> {
+        if self.cols != rhs.rows {
+            return Err("Dimensions not compatible".into());
+        }
 
         let lhs_stride = (self.cols + 63) / 64;
         let rhs_stride = (rhs.cols + 63) / 64;
@@ -246,18 +256,19 @@ impl ops::Mul<&MatrixBin> for &MatrixBin {
                 }
             });
 
-        result
+        Ok(result)
     }
 }
 
 impl ops::Add<&MatrixBin> for &MatrixBin {
-    type Output = MatrixBin;
+    type Output = Result<MatrixBin, String>;
 
-    fn add(self, rhs: &MatrixBin) -> MatrixBin {
-        assert_eq!(self.cols, rhs.cols);
-        assert_eq!(self.rows, rhs.rows);
+    fn add(self, rhs: &MatrixBin) -> Result<MatrixBin, String> {
+        if self.cols != rhs.cols || self.rows != rhs.rows {
+            return Err("Dimensions not compatible".into());
+        }
 
-        MatrixBin {
+        Ok(MatrixBin {
             cols: self.cols,
             rows: self.rows,
             cells: self
@@ -266,6 +277,6 @@ impl ops::Add<&MatrixBin> for &MatrixBin {
                 .zip(rhs.cells.iter())
                 .map(|(a, b)| a ^ b)
                 .collect(),
-        }
+        })
     }
 }
