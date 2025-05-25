@@ -4,7 +4,9 @@ use pyo3::prelude::*;
 use pyo3::types::PyType;
 use std::sync::{Arc, Mutex};
 
+use crate::expression::expression::Expression;
 use crate::matrix::matrix_bin::MatrixBin;
+use pyo3::exceptions::PyValueError;
 
 // Represent a multi-variate polynomial in GF(2)
 
@@ -112,13 +114,15 @@ impl ExpressionBin {
         self.__xor__(other)
     }
 
-    pub fn __mod__(&self, other: u64) -> ExpressionBin {
-        assert_eq!(other, 2);
-        ExpressionBin {
+    pub fn __mod__(&self, other: u64) -> PyResult<ExpressionBin> {
+        if other != 2 {
+            return Err(PyValueError::new_err("Only 2 is a valid modulus"));
+        }
+        Ok(ExpressionBin {
             coeffs: self.coeffs.clone(),
             constant: self.constant,
             config: self.config.clone(),
-        }
+        })
     }
 
     pub fn __mul__(&self, other: u64) -> ExpressionBin {
@@ -126,12 +130,21 @@ impl ExpressionBin {
     }
 
     pub fn __bool__(&self) -> bool {
-        return self.constant || self.coeffs.iter().any(|c| *c != 0u64);
+        Expression::bool(self)
     }
 
     #[getter]
     pub fn constant(&self) -> bool {
-        self.constant
+        Expression::constant(self)
+    }
+
+    #[getter]
+    pub fn degree(&self) -> u32 {
+        Expression::degree(self)
+    }
+
+    pub fn var_name(&self) -> Option<String> {
+        Expression::var_name(self)
     }
 
     pub fn lin_coeffs(&self) -> Vec<(bool, String)> {
@@ -170,11 +183,22 @@ impl ExpressionBin {
         self.__str__()
     }
 
-    pub fn degree(&self) -> u32 {
-        self.coeffs.iter().any(|c| *c != 0) as u32
-    }
+    #[classmethod]
+    pub fn to_matrix(
+        _cls: &Bound<PyType>,
+        equations: Vec<Bound<ExpressionBin>>,
+    ) -> (MatrixBin, Vec<bool>) {
+        let equations: Vec<PyRef<ExpressionBin>> = equations
+            .iter()
+            .map(|e| e.extract::<PyRef<ExpressionBin>>().unwrap())
+            .collect();
 
-    pub fn var_name(&self) -> Option<String> {
+        Expression::to_matrix(equations.iter().map(|e| &**e).collect())
+    }
+}
+
+impl Expression<bool, MatrixBin> for ExpressionBin {
+    fn var_name(&self) -> Option<String> {
         if self.constant {
             return None;
         }
@@ -193,12 +217,16 @@ impl ExpressionBin {
         Some(self.config.variables.lock().unwrap()[i * 64 + (c.ilog2() as usize)].clone())
     }
 
-    #[classmethod]
-    pub fn to_matrix(
-        _cls: &Bound<PyType>,
-        equations: Vec<Bound<ExpressionBin>>,
-    ) -> (MatrixBin, Vec<bool>) {
-        let cols = equations[0].borrow().config.variables.lock().unwrap().len();
+    fn degree(&self) -> u32 {
+        self.coeffs.iter().any(|c| *c != 0) as u32
+    }
+
+    fn constant(&self) -> bool {
+        self.constant
+    }
+
+    fn to_matrix(equations: Vec<&ExpressionBin>) -> (MatrixBin, Vec<bool>) {
+        let cols = equations[0].config.variables.lock().unwrap().len();
         let stride = (cols + 63) / 64;
         (
             MatrixBin {
@@ -207,7 +235,6 @@ impl ExpressionBin {
                 cells: equations
                     .iter()
                     .map(|e| {
-                        let e = e.borrow();
                         if e.coeffs.len() == stride {
                             return e.coeffs.clone();
                         }
@@ -220,8 +247,12 @@ impl ExpressionBin {
                     .flatten()
                     .collect(),
             },
-            equations.iter().map(|e| e.borrow().constant).collect(),
+            equations.iter().map(|e| e.constant).collect(),
         )
+    }
+
+    fn bool(&self) -> bool {
+        return self.constant || self.coeffs.iter().any(|c| *c != 0u64);
     }
 }
 

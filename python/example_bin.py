@@ -38,9 +38,9 @@ cs = [config.gen(f"c{i}") for i in range(230)]
 m, t = ExpressionBin.to_matrix([a ^ b, a ^ 1, cs[9] ^ 1])
 assert m.solve_right(t) == [True, True] + [False] * 9 + [True] + [False] * 220
 
-assert a.degree() == 1
-assert (a + b + 1).degree() == 1
-assert (a + b + 1 + a + b).degree() == 0
+assert a.degree == 1
+assert (a + b + 1).degree == 1
+assert (a + b + 1 + a + b).degree == 0
 
 A = MatrixBin.from_list(
     [

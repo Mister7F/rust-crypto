@@ -8,6 +8,7 @@ pub mod aes {
     pub mod aes_r8faults;
 }
 pub mod expression {
+    pub mod expression;
     pub mod expression_bin;
 }
 pub mod matrix {
