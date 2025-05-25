@@ -10,7 +10,6 @@ config = ExpressionBinConfig()
 a = config.gen("a")
 b = config.gen("b")
 
-
 assert str(a) == "a"
 assert str(a ^ b) == "a + b"
 assert str(a + b + 1 + a) == "1 + b"
@@ -34,7 +33,7 @@ m, t = ExpressionBin.to_matrix([a ^ b, a ^ 1])
 assert m.solve_right(t) == [True, True]
 
 # Add a lot of dummy variables
-cs = [config.gen(f"c{i}") for i in range(230)]
+cs = config.gens("c", 230)
 m, t = ExpressionBin.to_matrix([a ^ b, a ^ 1, cs[9] ^ 1])
 assert m.solve_right(t) == [True, True] + [False] * 9 + [True] + [False] * 220
 

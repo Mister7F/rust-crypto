@@ -4,7 +4,8 @@ use pyo3::prelude::*;
 use pyo3::types::PyType;
 use std::sync::{Arc, Mutex};
 
-use crate::expression::expression::Expression;
+use crate::expression::expression::{Expression, ExpressionConfig};
+use crate::impl_expression_config_pymethods;
 use crate::matrix::matrix_bin::MatrixBin;
 use pyo3::exceptions::PyValueError;
 
@@ -20,16 +21,14 @@ pub struct ExpressionBinConfig {
     variables: Arc<Mutex<Vec<String>>>,
 }
 
-#[pymethods]
-impl ExpressionBinConfig {
-    #[new]
+impl ExpressionConfig<ExpressionBin> for ExpressionBinConfig {
     fn new() -> Self {
         ExpressionBinConfig {
             variables: Arc::new(Mutex::new(vec![])),
         }
     }
 
-    pub fn gen(&mut self, name: String) -> ExpressionBin {
+    fn gen(&mut self, name: String) -> ExpressionBin {
         let mut variables = self.variables.lock().unwrap();
         let index = variables
             .iter()
@@ -48,6 +47,8 @@ impl ExpressionBinConfig {
         }
     }
 }
+
+impl_expression_config_pymethods!(ExpressionBinConfig);
 
 #[derive(Debug, FromPyObject)]
 #[pyclass(frozen)]
@@ -197,7 +198,7 @@ impl ExpressionBin {
     }
 }
 
-impl Expression<bool, MatrixBin> for ExpressionBin {
+impl Expression<bool, MatrixBin, ExpressionBinConfig> for ExpressionBin {
     fn var_name(&self) -> Option<String> {
         if self.constant {
             return None;
