@@ -21,6 +21,10 @@ assert not bool(a * 0)
 assert not bool(a ^ a)
 assert bool(a ^ a ^ 1)
 
+assert a.var_name() == "a"
+assert b.var_name() == "b"
+assert (b ^ 1).var_name() is None
+assert (b ^ a).var_name() is None
 
 m, t = ExpressionBin.to_matrix([a ^ b, a ^ b ^ 1])
 with assert_raises(ValueError, "Impossible system"):

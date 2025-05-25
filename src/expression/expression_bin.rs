@@ -174,6 +174,25 @@ impl ExpressionBin {
         self.coeffs.iter().any(|c| *c != 0) as u32
     }
 
+    pub fn var_name(&self) -> Option<String> {
+        if self.constant {
+            return None;
+        }
+        let res: Vec<(usize, &u64)> = self
+            .coeffs
+            .iter()
+            .enumerate()
+            .filter(|(_i, c)| **c != 0)
+            .collect();
+        if res.len() != 1 || res[0].1.count_ones() != 1 {
+            return None;
+        }
+
+        let i = res[0].0;
+        let c = res[0].1;
+        Some(self.config.variables.lock().unwrap()[i * 64 + (c.ilog2() as usize)].clone())
+    }
+
     #[classmethod]
     pub fn to_matrix(
         _cls: &Bound<PyType>,
@@ -181,7 +200,6 @@ impl ExpressionBin {
     ) -> (MatrixBin, Vec<bool>) {
         let cols = equations[0].borrow().config.variables.lock().unwrap().len();
         let stride = (cols + 63) / 64;
-        println!("{:?}", stride);
         (
             MatrixBin {
                 cols: cols,
@@ -312,5 +330,17 @@ mod tests {
         );
         assert_eq!((c("a") * 1).__str__(), "a");
         assert_eq!((c("a") * 0).__str__(), "0");
+    }
+
+    #[test]
+    fn test_var_name() {
+        let mut config = ExpressionBinConfig::new();
+
+        let mut c = |name: &str| config.gen(name.into());
+
+        assert_eq!(c("a").var_name(), Some("a".into()));
+        assert_eq!(c("b").var_name(), Some("b".into()));
+        assert_eq!((c("a") + c("b")).var_name(), None);
+        assert_eq!((c("a") + true).var_name(), None);
     }
 }
