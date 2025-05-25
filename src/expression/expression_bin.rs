@@ -2,10 +2,10 @@ use core::ops;
 use itertools::Itertools;
 use pyo3::prelude::*;
 use pyo3::types::PyType;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
-use crate::expression::expression::{Expression, ExpressionConfig};
-use crate::impl_expression_config_pymethods;
+use crate::expression::expression::Expression;
+use crate::expression::expression_bin_config::ExpressionBinConfig;
 use crate::matrix::matrix_bin::MatrixBin;
 use pyo3::exceptions::PyValueError;
 
@@ -14,41 +14,6 @@ use pyo3::exceptions::PyValueError;
 // --------------------------------------------------
 //                      PYTHON
 // --------------------------------------------------
-
-#[pyclass]
-#[derive(Debug, Clone)]
-pub struct ExpressionBinConfig {
-    variables: Arc<Mutex<Vec<String>>>,
-}
-
-impl ExpressionConfig<ExpressionBin> for ExpressionBinConfig {
-    fn new() -> Self {
-        ExpressionBinConfig {
-            variables: Arc::new(Mutex::new(vec![])),
-        }
-    }
-
-    fn gen(&mut self, name: String) -> ExpressionBin {
-        let mut variables = self.variables.lock().unwrap();
-        let index = variables
-            .iter()
-            .position(|x| x == &name)
-            .unwrap_or_else(|| {
-                variables.push(name);
-                variables.len() - 1
-            });
-
-        ExpressionBin {
-            coeffs: (0u64..(index / 64) as u64)
-                .chain(std::iter::once(1u64 << (index % 64)))
-                .collect(),
-            constant: false,
-            config: self.clone(),
-        }
-    }
-}
-
-impl_expression_config_pymethods!(ExpressionBinConfig);
 
 #[derive(Debug, FromPyObject)]
 #[pyclass(frozen)]
@@ -62,10 +27,10 @@ pub struct ExpressionBin {
 #[pymethods]
 impl ExpressionBin {
     #[new]
-    fn new(coeffs: Vec<u64>, config: &ExpressionBinConfig) -> Self {
+    pub fn new(coeffs: Vec<u64>, constant: bool, config: &ExpressionBinConfig) -> Self {
         ExpressionBin {
             coeffs: coeffs,
-            constant: false,
+            constant: constant,
             config: config.clone(),
         }
     }

@@ -10,6 +10,7 @@ pub mod aes {
 pub mod expression {
     pub mod expression;
     pub mod expression_bin;
+    pub mod expression_bin_config;
 }
 pub mod matrix {
     pub mod matrix_bin;
@@ -32,7 +33,7 @@ fn rust_crypto(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(aes::aes_5_rounds::aes_5_rounds, m)?)?;
     m.add_function(wrap_pyfunction!(aes::aes_r8faults::aes_r8faults_filter, m)?)?;
     m.add_class::<expression::expression_bin::ExpressionBin>()?;
-    m.add_class::<expression::expression_bin::ExpressionBinConfig>()?;
+    m.add_class::<expression::expression_bin_config::ExpressionBinConfig>()?;
     m.add_class::<matrix::matrix_bin::MatrixBin>()?;
     Ok(())
 }
