@@ -20,20 +20,7 @@ pub struct MatrixBin {
 impl MatrixBin {
     #[classmethod]
     pub fn from_list(_cls: &Bound<PyType>, lines: Vec<Vec<u8>>) -> Self {
-        let rows = lines.len();
-        let cols = lines.iter().map(|line| line.len()).max().unwrap_or(0);
-        assert!(lines.iter().all(|line| line.len() == cols));
-
-        let cells = lines
-            .iter()
-            .map(|line| {
-                line.chunks(64)
-                    .map(|c| bits_to_u64(c.iter().map(|c| c & 1 != 0)))
-            })
-            .flatten()
-            .collect();
-
-        MatrixBin { cols, rows, cells }
+        MatrixBin::_from_list(lines)
     }
 
     pub fn to_list(&self) -> Vec<Vec<bool>> {
@@ -194,7 +181,8 @@ impl MatrixBin {
 }
 
 impl MatrixBin {
-    pub fn identity(n: usize) -> MatrixBin {
+    // TODO: move in Matrix trait
+    pub fn identity(n: usize) -> Self {
         let stride = (n + 63) / 64;
         let mut cells = vec![0u64; n * stride];
         for i in 0..n {
@@ -207,13 +195,30 @@ impl MatrixBin {
         }
     }
 
-    pub fn new(rows: usize, cols: usize) -> MatrixBin {
+    pub fn new(rows: usize, cols: usize) -> Self {
         let stride = (cols + 63) / 64;
         MatrixBin {
             rows,
             cols,
             cells: vec![0u64; rows * stride],
         }
+    }
+
+    pub fn _from_list(lines: Vec<Vec<u8>>) -> Self {
+        let rows = lines.len();
+        let cols = lines.iter().map(|line| line.len()).max().unwrap_or(0);
+        assert!(lines.iter().all(|line| line.len() == cols));
+
+        let cells = lines
+            .iter()
+            .map(|line| {
+                line.chunks(64)
+                    .map(|c| bits_to_u64(c.iter().map(|c| c & 1 != 0)))
+            })
+            .flatten()
+            .collect();
+
+        MatrixBin { cols, rows, cells }
     }
 }
 

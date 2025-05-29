@@ -14,7 +14,12 @@ pub mod expression {
 }
 pub mod matrix {
     pub mod matrix_bin;
+    pub mod matrix_gen;
 }
+pub mod rings {
+    pub mod zmod;
+}
+
 pub mod utils;
 
 #[pyfunction]
@@ -35,5 +40,6 @@ fn rust_crypto(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<expression::expression_bin::ExpressionBin>()?;
     m.add_class::<expression::expression_bin_config::ExpressionBinConfig>()?;
     m.add_class::<matrix::matrix_bin::MatrixBin>()?;
+    // m.add_class::<matrix::matrix::Matrix<BigInt>>()?;
     Ok(())
 }

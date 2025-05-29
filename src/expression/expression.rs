@@ -31,7 +31,7 @@ macro_rules! impl_expression_config_pymethods {
         #[pymethods]
         impl $type {
             #[new]
-            fn new() -> Self {
+            pub fn new() -> Self {
                 ExpressionConfig::new()
             }
 
