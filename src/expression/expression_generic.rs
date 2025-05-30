@@ -21,6 +21,7 @@ struct ZipMonomials<'a, T> {
     current_s: Option<&'a Monomial<T>>,
     current_r: Option<&'a Monomial<T>>,
     started: bool,
+    coefficient_operator: fn(a: T, b: T) -> T,
 }
 
 impl<T: GenElement> Iterator for ZipMonomials<'_, T> {
@@ -31,9 +32,6 @@ impl<T: GenElement> Iterator for ZipMonomials<'_, T> {
             self.current_s = self.self_monomials.next();
             self.current_r = self.rhs_monomials.next();
             self.started = true;
-        }
-        if self.current_s.is_none() && self.current_r.is_none() {
-            return None;
         }
         let current_sx = match self.current_s {
             Some(current_sx) => {
@@ -51,12 +49,20 @@ impl<T: GenElement> Iterator for ZipMonomials<'_, T> {
 
         // Both not none
         if current_sx.exponents == current_rx.exponents {
-            let result = Monomial {
-                exponents: current_rx.exponents.clone(),
-                coefficient: current_sx.coefficient.clone() + current_sx.coefficient.clone(),
-            };
             self.current_s = self.self_monomials.next();
             self.current_r = self.rhs_monomials.next();
+
+            let coeff = (self.coefficient_operator)(
+                current_sx.coefficient.clone(),
+                current_rx.coefficient.clone(),
+            );
+            if coeff == T::zero() {
+                return self.next();
+            }
+            let result = Monomial {
+                exponents: current_rx.exponents.clone(),
+                coefficient: coeff,
+            };
             return Some(result);
         }
         if current_sx.exponents < current_rx.exponents {
@@ -69,13 +75,18 @@ impl<T: GenElement> Iterator for ZipMonomials<'_, T> {
 }
 
 impl<T: GenElement> ExpressionGeneric<T> {
-    fn zip_monomials<'a>(&'a self, rhs: &'a ExpressionGeneric<T>) -> ZipMonomials<'a, T> {
+    fn zip_monomials<'a>(
+        &'a self,
+        rhs: &'a ExpressionGeneric<T>,
+        coefficient_operator: fn(a: T, b: T) -> T,
+    ) -> ZipMonomials<'a, T> {
         ZipMonomials {
             self_monomials: self.monomials.iter(),
             rhs_monomials: rhs.monomials.iter(),
             current_s: None,
             current_r: None,
             started: false,
+            coefficient_operator,
         }
     }
 }
@@ -123,7 +134,7 @@ impl<T: GenElement> ops::Add<ExpressionGeneric<T>> for ExpressionGeneric<T> {
 
     fn add(self, rhs: ExpressionGeneric<T>) -> ExpressionGeneric<T> {
         ExpressionGeneric {
-            monomials: self.zip_monomials(&rhs).collect(),
+            monomials: self.zip_monomials(&rhs, |a, b| a + b).collect(),
             constant: self.constant + rhs.constant,
         }
     }
@@ -147,6 +158,17 @@ impl<T: GenElement> ops::Sub<T> for ExpressionGeneric<T> {
         ExpressionGeneric {
             monomials: self.monomials,
             constant: self.constant - rhs,
+        }
+    }
+}
+
+impl<T: GenElement> ops::Sub<ExpressionGeneric<T>> for ExpressionGeneric<T> {
+    type Output = ExpressionGeneric<T>;
+
+    fn sub(self, rhs: ExpressionGeneric<T>) -> ExpressionGeneric<T> {
+        ExpressionGeneric {
+            monomials: self.zip_monomials(&rhs, |a, b| a - b).collect(),
+            constant: self.constant - rhs.constant,
         }
     }
 }
@@ -182,7 +204,7 @@ mod tests {
 
     #[test]
     fn test_expression_generic() {
-        let mut config: ExpressionGenericConfig<u32> = ExpressionGenericConfig::new();
+        let mut config: ExpressionGenericConfig<i32> = ExpressionGenericConfig::new();
         let p1 = config.gen("x".into());
         assert_eq!("x", format!("{}", p1));
 
@@ -191,9 +213,19 @@ mod tests {
         assert_eq!("y + 1", format!("{}", p2.clone() + 1));
         assert_eq!("y", format!("{}", (p2.clone() + 1) - 1));
         assert_eq!("5 * y + 5", format!("{}", (p2.clone() + 1) * 5));
-        assert_eq!(
-            "5 * x + 10 * y + 15",
-            format!("{}", (p2.clone() * 2 + 3 + p1.clone()) * 5)
-        );
+        let p = (p2.clone() * 2 + 3 + p1.clone()) * 5;
+        assert_eq!("5 * x + 10 * y + 15", format!("{}", p));
+        let p = p + p2.clone();
+        assert_eq!("5 * x + 11 * y + 15", format!("{}", p));
+        let pp = p.clone() + (p.clone() * 3);
+        assert_eq!("20 * x + 44 * y + 60", format!("{}", pp));
+        let p = pp.clone() - (p * 3);
+        assert_eq!("5 * x + 11 * y + 15", format!("{}", p));
+        let p = p.clone() - (p1.clone() * 5);
+        assert_eq!("11 * y + 15", format!("{}", p));
+        let p = p.clone() - (p2.clone() * 9 + 1);
+        assert_eq!("2 * y + 14", format!("{}", p));
+        let p = p.clone() - (p2.clone() * 2 - 2);
+        assert_eq!("16", format!("{}", p));
     }
 }
