@@ -3,7 +3,7 @@ use num_traits::{One, Zero};
 use std::ops;
 use std::ops::{Add, Div, Mul, Sub};
 
-pub trait MatrixElement:  // Avoid repeating all the traits
+pub trait GenElement:  // Avoid repeating all the traits
     Clone
     + Zero
     + One
@@ -13,10 +13,11 @@ pub trait MatrixElement:  // Avoid repeating all the traits
     + Mul<Output = Self>
     + Div<Output = Self>
     + std::iter::Sum<Self>
+    + std::fmt::Display
 {
 }
 
-impl<T> MatrixElement for T where
+impl<T> GenElement for T where
     T: Clone
         + Zero
         + One
@@ -26,6 +27,7 @@ impl<T> MatrixElement for T where
         + Mul<Output = T>
         + Div<Output = T>
         + std::iter::Sum<T>
+        + std::fmt::Display
 {
 }
 
@@ -36,7 +38,7 @@ pub struct MatrixGen<T> {
     pub cells: Vec<T>,
 }
 
-impl<T: MatrixElement> MatrixGen<T> {
+impl<T: GenElement> MatrixGen<T> {
     pub fn to_list(&self) -> Vec<Vec<T>> {
         self.cells
             .chunks(self.cols)
@@ -164,7 +166,7 @@ impl<T: MatrixElement> MatrixGen<T> {
     }
 }
 
-impl<T: MatrixElement> ops::Add<&MatrixGen<T>> for &MatrixGen<T> {
+impl<T: GenElement> ops::Add<&MatrixGen<T>> for &MatrixGen<T> {
     type Output = Result<MatrixGen<T>, String>;
 
     fn add(self, rhs: &MatrixGen<T>) -> Result<MatrixGen<T>, String> {
@@ -185,7 +187,7 @@ impl<T: MatrixElement> ops::Add<&MatrixGen<T>> for &MatrixGen<T> {
     }
 }
 
-impl<T: MatrixElement> ops::Mul<&MatrixGen<T>> for &MatrixGen<T> {
+impl<T: GenElement> ops::Mul<&MatrixGen<T>> for &MatrixGen<T> {
     type Output = Result<MatrixGen<T>, String>;
 
     fn mul(self, rhs: &MatrixGen<T>) -> Result<MatrixGen<T>, String> {

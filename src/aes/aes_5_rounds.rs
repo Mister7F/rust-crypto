@@ -114,8 +114,8 @@ pub fn aes_5_rounds(ciphertexts: Vec<[[u8; 16]; 256]>, max_column_key: u32) -> [
 #[inline(always)]
 fn _aes_5_rounds_test_key(
     col: usize,
-    ciphertexts: &Vec<Vec<__m128i>>,
-    keys_round_4: &Vec<Vec<__m128i>>,
+    ciphertexts: &[Vec<__m128i>],
+    keys_round_4: &[Vec<__m128i>],
     key_5_maker: &[[__m128i; 256]; 16],
     column_key: &[u8; 4],
 ) -> bool {
@@ -139,14 +139,14 @@ fn _aes_5_rounds_test_key(
         for key_4 in &keys_round_4[key_i] {
             let mut ok = true;
 
-            for k in 0..delta_sets {
+            for (k, ct) in ciphertexts.iter().enumerate().take(delta_sets) {
                 let mut xor_sum = 0u8;
 
                 for l in 0..256_usize {
                     let ciphertext_5 = if k == 0 {
                         ciphertexts_5[l]
                     } else {
-                        _decrypt_round_5(ciphertexts[k][l], key_5)
+                        _decrypt_round_5(ct[l], key_5)
                     };
                     xor_sum ^= _decrypt_round_4(ciphertext_5, *key_4, key_i);
                 }

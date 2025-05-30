@@ -27,7 +27,12 @@ where
 // Macro to create the python interface
 #[macro_export]
 macro_rules! impl_expression_config_pymethods {
-    ($type:ty) => {
+    ($type:ty, $expression_type: ty) => {
+        impl Default for $type {
+            fn default() -> Self {
+                Self::new()
+            }
+        }
         #[pymethods]
         impl $type {
             #[new]
@@ -35,11 +40,11 @@ macro_rules! impl_expression_config_pymethods {
                 ExpressionConfig::new()
             }
 
-            pub fn gen(&mut self, name: String) -> ExpressionBin {
+            pub fn gen(&mut self, name: String) -> $expression_type {
                 ExpressionConfig::gen(self, name)
             }
 
-            pub fn gens(&mut self, name: String, n: usize) -> Vec<ExpressionBin> {
+            pub fn gens(&mut self, name: String, n: usize) -> Vec<$expression_type> {
                 ExpressionConfig::gens(self, name, n)
             }
         }

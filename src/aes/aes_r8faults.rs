@@ -30,10 +30,7 @@ pub fn aes_r8faults_filter(
                 let key_10 = _make_key(k0, k1, k2, k3);
 
                 let r = _r8faults_partial_decrypt(ciphertext, ciphertext_error, key_10, fault_mask);
-
-                let Some(diff) = r else {
-                    return None;
-                };
+                let diff = r?;
                 // check that the error in round 8 is valid
                 // (everything null except our error at given index)
                 if !diff.iter().enumerate().all(|(i, val)| {

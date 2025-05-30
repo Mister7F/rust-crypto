@@ -16,8 +16,8 @@ pub fn bits_to_u64(bits: impl Iterator<Item = bool>) -> u64 {
 
 pub fn u64_to_bits(value: u64) -> [bool; 64] {
     let mut ret = [false; 64];
-    for i in 0..64 {
-        ret[i] = (value >> i) & 1 != 0;
+    for (i, r) in ret.iter_mut().enumerate() {
+        *r = (value >> i) & 1 != 0;
     }
     ret
 }

@@ -29,8 +29,8 @@ impl ExpressionBin {
     #[new]
     pub fn new(coeffs: Vec<u64>, constant: bool, config: &ExpressionBinConfig) -> Self {
         ExpressionBin {
-            coeffs: coeffs,
-            constant: constant,
+            coeffs,
+            constant,
             config: config.clone(),
         }
     }
@@ -44,11 +44,11 @@ impl ExpressionBin {
                     Arc::ptr_eq(&self.config.variables, &borrowed.config.variables),
                     "Expression config is not shared"
                 );
-                return self._add(&borrowed.coeffs, borrowed.constant);
+                self._add(&borrowed.coeffs, borrowed.constant)
             }
             ExpressionBinOrInt::Int(other) => {
                 if other % 2 == 1 {
-                    return self._add(&vec![], true);
+                    self._add(&[], true)
                 } else {
                     ExpressionBin {
                         coeffs: self.coeffs.clone(),
@@ -141,7 +141,7 @@ impl ExpressionBin {
         self.lin_coeffs()
             .iter()
             .filter(|(coeff, _name)| *coeff)
-            .map(|(_coeff, name)| if name.len() != 0 { name } else { "1" })
+            .map(|(_coeff, name)| if !name.is_empty() { name } else { "1" })
             .join(" + ")
     }
 
@@ -193,14 +193,14 @@ impl Expression<bool, MatrixBin, ExpressionBinConfig> for ExpressionBin {
 
     fn to_matrix(equations: Vec<&ExpressionBin>) -> (MatrixBin, Vec<bool>) {
         let cols = equations[0].config.variables.lock().unwrap().len();
-        let stride = (cols + 63) / 64;
+        let stride = cols.div_ceil(64);
         (
             MatrixBin {
-                cols: cols,
+                cols,
                 rows: equations.len(),
                 cells: equations
                     .iter()
-                    .map(|e| {
+                    .flat_map(|e| {
                         if e.coeffs.len() == stride {
                             return e.coeffs.clone();
                         }
@@ -210,7 +210,6 @@ impl Expression<bool, MatrixBin, ExpressionBinConfig> for ExpressionBin {
                             .chain(vec![0u64; stride - e.coeffs.len()].iter().copied())
                             .collect()
                     })
-                    .flatten()
                     .collect(),
             },
             equations.iter().map(|e| e.constant).collect(),
@@ -218,7 +217,7 @@ impl Expression<bool, MatrixBin, ExpressionBinConfig> for ExpressionBin {
     }
 
     fn bool(&self) -> bool {
-        return self.constant || self.coeffs.iter().any(|c| *c != 0u64);
+        self.constant || self.coeffs.iter().any(|c| *c != 0u64)
     }
 }
 
@@ -228,7 +227,7 @@ impl Expression<bool, MatrixBin, ExpressionBinConfig> for ExpressionBin {
 
 impl ExpressionBin {
     #[inline(always)]
-    fn _add(&self, coeffs: &Vec<u64>, constant: bool) -> ExpressionBin {
+    fn _add(&self, coeffs: &[u64], constant: bool) -> ExpressionBin {
         let self_len = self.coeffs.len();
         let other_len = coeffs.len();
 
@@ -286,7 +285,7 @@ impl ops::Add<bool> for ExpressionBin {
     type Output = ExpressionBin;
 
     fn add(self, rhs: bool) -> ExpressionBin {
-        self._add(&vec![], rhs)
+        self._add(&[], rhs)
     }
 }
 

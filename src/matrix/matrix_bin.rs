@@ -24,13 +24,12 @@ impl MatrixBin {
     }
 
     pub fn to_list(&self) -> Vec<Vec<bool>> {
-        let stride = (self.cols + 63) / 64;
+        let stride = self.cols.div_ceil(64);
         self.cells
             .chunks(stride)
             .map(|line| {
                 line.iter()
-                    .map(|x| u64_to_bits(*x))
-                    .flatten()
+                    .flat_map(|x| u64_to_bits(*x))
                     .take(self.cols)
                     .collect()
             })
@@ -57,7 +56,7 @@ impl MatrixBin {
         }
 
         let n = self.rows;
-        let stride = (self.cols + 63) / 64;
+        let stride = self.cols.div_ceil(64);
         let mut aug = self.clone();
         let mut identity = MatrixBin::identity(n);
 
@@ -71,11 +70,7 @@ impl MatrixBin {
                 }
             }
 
-            let pivot = match pivot_row {
-                Some(p) => p,
-                None => return None,
-            };
-
+            let pivot = pivot_row?;
             if pivot != col {
                 for k in 0..stride {
                     aug.cells.swap(col * stride + k, pivot * stride + k);
@@ -108,7 +103,7 @@ impl MatrixBin {
 
         let mut aug = self.clone();
         let n = self.rows;
-        let stride = (self.cols + 63) / 64;
+        let stride = self.cols.div_ceil(64);
         let mut target = target.clone();
 
         for col in 0..n {
@@ -149,7 +144,7 @@ impl MatrixBin {
         let target: Vec<bool> = target.iter().map(|t| t & 1 != 0).collect();
 
         let (echelon, target) = self.echelon_form(target)?;
-        let stride = (self.cols + 63) / 64;
+        let stride = self.cols.div_ceil(64);
         let n_unknowns = self.cols;
         let mut res = vec![false; n_unknowns];
 
@@ -183,7 +178,7 @@ impl MatrixBin {
 impl MatrixBin {
     // TODO: move in Matrix trait
     pub fn identity(n: usize) -> Self {
-        let stride = (n + 63) / 64;
+        let stride = n.div_ceil(64);
         let mut cells = vec![0u64; n * stride];
         for i in 0..n {
             cells[i * stride + i / 64] |= 1u64 << (i % 64);
@@ -196,7 +191,7 @@ impl MatrixBin {
     }
 
     pub fn new(rows: usize, cols: usize) -> Self {
-        let stride = (cols + 63) / 64;
+        let stride = cols.div_ceil(64);
         MatrixBin {
             rows,
             cols,
@@ -211,11 +206,10 @@ impl MatrixBin {
 
         let cells = lines
             .iter()
-            .map(|line| {
+            .flat_map(|line| {
                 line.chunks(64)
                     .map(|c| bits_to_u64(c.iter().map(|c| c & 1 != 0)))
             })
-            .flatten()
             .collect();
 
         MatrixBin { cols, rows, cells }
@@ -230,8 +224,8 @@ impl ops::Mul<&MatrixBin> for &MatrixBin {
             return Err("Dimensions not compatible".into());
         }
 
-        let lhs_stride = (self.cols + 63) / 64;
-        let rhs_stride = (rhs.cols + 63) / 64;
+        let lhs_stride = self.cols.div_ceil(64);
+        let rhs_stride = rhs.cols.div_ceil(64);
         let mut result = MatrixBin::new(self.rows, rhs.cols);
         let res_stride = rhs_stride;
 

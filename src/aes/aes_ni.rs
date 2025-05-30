@@ -9,7 +9,7 @@ pub fn load(vector: [u8; 16]) -> __m128i {
 }
 
 #[inline(always)]
-pub fn load_vec(value: &Vec<u8>) -> __m128i {
+pub fn load_vec(value: &[u8]) -> __m128i {
     load(value[..].try_into().unwrap())
 }
 

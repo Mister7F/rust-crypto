@@ -39,4 +39,4 @@ impl ExpressionConfig<ExpressionBin> for ExpressionBinConfig {
     }
 }
 
-impl_expression_config_pymethods!(ExpressionBinConfig);
+impl_expression_config_pymethods!(ExpressionBinConfig, ExpressionBin);
