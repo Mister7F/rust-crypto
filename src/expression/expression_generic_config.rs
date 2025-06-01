@@ -28,7 +28,6 @@ impl<T: GenElement> ExpressionConfig<ExpressionGeneric<T>> for ExpressionGeneric
                     coefficient: T::one(),
                 }
             }],
-            constant: T::zero(),
         }
     }
 }

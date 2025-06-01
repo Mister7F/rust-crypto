@@ -14,6 +14,8 @@ pub trait GenElement:  // Avoid repeating all the traits
     + Div<Output = Self>
     + std::iter::Sum<Self>
     + std::fmt::Display
+     + std::cmp::Ord
+    + std::fmt::Debug
 {
 }
 
@@ -28,6 +30,8 @@ impl<T> GenElement for T where
         + Div<Output = T>
         + std::iter::Sum<T>
         + std::fmt::Display
+        + std::cmp::Ord
+        + std::fmt::Debug
 {
 }
 
