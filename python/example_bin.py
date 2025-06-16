@@ -186,7 +186,8 @@ start = time.time()
 R_c = A_c * B_c
 print("MatrixBin", time.time() - start)
 
-assert [list(map(int, line)) for line in R_s] == R_c.to_list()
+assert [list(map(bool, line)) for line in A_s] == A_c.to_list()
+assert [list(map(bool, line)) for line in R_s] == R_c.to_list()
 
 with assert_raises(ValueError, "Dimensions not compatible"):
     MatrixBin.from_list([[0, 0, 0], [0, 0, 0]]) + MatrixBin.from_list([[0, 0, 0]])

@@ -15,6 +15,7 @@ pub mod expression {
     pub mod expression_generic_config;
 }
 pub mod matrix {
+    pub mod matrix;
     pub mod matrix_bin;
     pub mod matrix_gen;
 }

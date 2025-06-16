@@ -124,18 +124,18 @@ impl<T: GenElement> MatrixGen<T> {
         Ok((mat, target, rank))
     }
 
-    pub fn solve_right(&self, target: Vec<T>) -> Result<Vec<T>, &str> {
-        let (a, target, rank) = self.echelon_form(target)?;
-        let n = a.rows;
+    pub fn solve_right(&self, target: Vec<T>) -> Result<(Vec<T>, MatrixGen<T>, usize), &str> {
+        let (echelon, target, rank) = self.echelon_form(target)?;
+        let n = echelon.rows;
         let mut x = vec![T::zero(); n];
 
         for i in (0..n).rev() {
             let mut acc = target[i].clone();
             for j in i + 1..n {
-                acc = acc - a._at(i, j) * x[j].clone();
+                acc = acc - echelon._at(i, j) * x[j].clone();
             }
 
-            let diag = a._at(i, i);
+            let diag = echelon._at(i, i);
             if diag == T::zero() {
                 return Err("Singular matrix");
             }
@@ -143,7 +143,7 @@ impl<T: GenElement> MatrixGen<T> {
             x[i] = acc / diag;
         }
 
-        Ok(x)
+        Ok((x, echelon, rank))
     }
 
     pub fn right_kernel_matrix(&self) -> MatrixGen<T> {
@@ -376,7 +376,7 @@ mod tests {
             MatrixGen::<BigInt>::from_list(vec![vec![bi("16"), bi("4")], vec![bi("8"), bi("16")]])
                 .unwrap();
         assert_eq!(
-            a.solve_right(vec![bi("896"), bi("1792")]).unwrap(),
+            a.solve_right(vec![bi("896"), bi("1792")]).unwrap().0,
             vec![bi("32"), bi("96")],
         );
     }
