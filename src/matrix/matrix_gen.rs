@@ -42,7 +42,7 @@ pub struct MatrixGen<T> {
     pub cells: Vec<T>,
 }
 
-impl<T: GenElement> MatrixGen<T> {
+impl<T: GenElement> MatrixGen<T> {  // TODO: implement `Matrix` trait
     pub fn to_list(&self) -> Vec<Vec<T>> {
         self.cells
             .chunks(self.cols)
