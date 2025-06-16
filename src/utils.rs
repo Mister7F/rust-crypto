@@ -11,7 +11,9 @@ pub fn hex(input: &[u8]) -> String {
 }
 
 pub fn bits_to_u64(bits: impl Iterator<Item = bool>) -> u64 {
-    bits.enumerate().map(|(i, b)| (b as u64) << i).sum()
+    bits.take(64)
+        .enumerate()
+        .fold(0u64, |acc, (i, b)| acc | ((b as u64) << i))
 }
 
 pub fn u64_to_bits(value: u64) -> [bool; 64] {

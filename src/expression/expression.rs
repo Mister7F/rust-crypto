@@ -47,6 +47,11 @@ macro_rules! impl_expression_config_pymethods {
             pub fn gens(&mut self, name: String, n: usize) -> Vec<$expression_type> {
                 ExpressionConfig::gens(self, name, n)
             }
+
+            #[getter]
+            pub fn variables(&self) -> Vec<String> {
+                self.variables.lock().unwrap().to_vec()
+            }
         }
     };
 }

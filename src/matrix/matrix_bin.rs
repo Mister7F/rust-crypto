@@ -47,6 +47,10 @@ impl MatrixBin {
         }
     }
 
+    pub fn at(&self, row: usize, col: usize) -> bool {
+        Matrix::at(self, row, col)
+    }
+
     #[getter]
     pub fn T(&self) -> MatrixBin {
         self.transpose()

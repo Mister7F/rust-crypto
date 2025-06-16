@@ -29,13 +29,9 @@ impl ExpressionConfig<ExpressionBin> for ExpressionBinConfig {
                 variables.len() - 1
             });
 
-        ExpressionBin::new(
-            (0u64..(index / 64) as u64)
-                .chain(std::iter::once(1u64 << (index % 64)))
-                .collect(),
-            false,
-            &self.clone(),
-        )
+        let mut coeffs = vec![0u64; (index / 64)];
+        coeffs.push(1u64 << (index % 64));
+        ExpressionBin::new(coeffs, false, &self.clone())
     }
 }
 
