@@ -29,13 +29,14 @@ m, t = ExpressionBin.to_matrix([a ^ b, a ^ b ^ 1])
 with assert_raises(ValueError, "Impossible system"):
     m.solve_right(t)
 
+
 m, t = ExpressionBin.to_matrix([a ^ b, a ^ 1])
-assert m.solve_right(t) == [True, True]
+assert m.solve_right(t)[0] == [True, True]
 
 # Add a lot of dummy variables
 cs = config.gens("c", 230)
 m, t = ExpressionBin.to_matrix([a ^ b, a ^ 1, cs[9] ^ 1])
-assert m.solve_right(t) == [True, True] + [False] * 9 + [True] + [False] * 220
+assert m.solve_right(t)[0] == [True, True] + [False] * 9 + [True] + [False] * 220
 
 assert a.degree == 1
 assert (a + b + 1).degree == 1
@@ -72,7 +73,7 @@ M = [
 ]
 t = [False, True, True, False, True, True]
 A = MatrixBin.from_list(M)
-assert A.solve_right(t) == [False, False, False, True]
+assert A.solve_right(t)[0] == [False, False, False, True]
 
 random.seed(133337)  # Make solution possible
 M = [[random.randrange(2) for _ in range(2_001)] for _ in range(2_001)]
@@ -87,7 +88,7 @@ print("Sage     ", time.time() - start)
 M_c = MatrixBin.from_list(M)
 t_c = t
 start = time.time()
-S_c = M_c.solve_right(t_c)
+S_c = M_c.solve_right(t_c)[0]
 print("MatrixBin", time.time() - start)
 assert all(a == b for a, b in zip(S_s, S_c))
 

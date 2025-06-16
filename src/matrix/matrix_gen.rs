@@ -65,53 +65,67 @@ impl<T: GenElement> MatrixGen<T> {
         todo!()
     }
 
-    pub fn echelon_form(&self, mut target: Vec<T>) -> Result<(MatrixGen<T>, Vec<T>), &str> {
+    pub fn echelon_form(&self, mut target: Vec<T>) -> Result<(MatrixGen<T>, Vec<T>, usize), &str> {
         if target.len() != self.rows {
             return Err("Target size does not match number of rows");
         }
 
         let mut mat = self.clone();
+        let mut rank = 0;
+        let mut row = 0;
 
         for col in 0..mat.cols {
             let mut pivot_row = None;
-            for row in col..mat.rows {
-                if mat._at(row, col) != T::zero() {
-                    pivot_row = Some(row);
+            for r in row..mat.rows {
+                if mat._at(r, col) != T::zero() {
+                    pivot_row = Some(r);
                     break;
                 }
             }
 
             let pivot_row = match pivot_row {
-                Some(row) => row,
+                Some(r) => r,
                 None => continue,
             };
 
-            if pivot_row != col {
+            if pivot_row != row {
                 for k in 0..mat.cols {
-                    mat.cells.swap(col * mat.cols + k, pivot_row * mat.cols + k);
+                    mat.cells.swap(row * mat.cols + k, pivot_row * mat.cols + k);
                 }
-                target.swap(col, pivot_row);
+                target.swap(row, pivot_row);
             }
 
-            for row in (col + 1)..mat.rows {
-                let pivot = mat._at(col, col);
-                let factor = mat._at(row, col);
+            let pivot_val = mat._at(row, col);
 
-                for k in 0..mat.cols {
-                    let a = mat._at(row, k) * pivot.clone();
-                    let b = mat._at(col, k) * factor.clone();
-                    mat.cells[row * mat.cols + k] = a - b;
+            for r in 0..mat.rows {
+                if r == row {
+                    continue;
                 }
 
-                target[row] = target[row].clone() * pivot - target[col].clone() * factor;
+                let factor = mat._at(r, col);
+                for k in 0..mat.cols {
+                    let a = mat._at(r, k) * pivot_val.clone();
+                    let b = mat._at(row, k) * factor.clone();
+                    mat.cells[r * mat.cols + k] = a - b;
+                }
+
+                let a = target[r].clone() * pivot_val.clone();
+                let b = target[row].clone() * factor;
+                target[r] = a - b;
+            }
+
+            rank += 1;
+            row += 1;
+            if row >= mat.rows {
+                break;
             }
         }
 
-        Ok((mat, target))
+        Ok((mat, target, rank))
     }
 
     pub fn solve_right(&self, target: Vec<T>) -> Result<Vec<T>, &str> {
-        let (a, target) = self.echelon_form(target)?;
+        let (a, target, rank) = self.echelon_form(target)?;
         let n = a.rows;
         let mut x = vec![T::zero(); n];
 
@@ -130,6 +144,92 @@ impl<T: GenElement> MatrixGen<T> {
         }
 
         Ok(x)
+    }
+
+    pub fn right_kernel_matrix(&self) -> MatrixGen<T> {
+        assert!(self.is_rref());
+
+        let zero_vec = vec![T::zero(); self.rows];
+
+        let (rref, _, _) = self.echelon_form(zero_vec).unwrap();
+
+        let mut pivots = vec![false; rref.cols];
+        let mut pivot_rows = vec![None; rref.cols];
+
+        for i in 0..rref.rows {
+            for j in 0..rref.cols {
+                if rref._at(i, j) != T::zero() {
+                    pivots[j] = true;
+                    pivot_rows[j] = Some(i);
+                    break;
+                }
+            }
+        }
+
+        let free_cols: Vec<usize> = (0..rref.cols).filter(|&j| !pivots[j]).collect();
+        let mut basis = vec![];
+
+        for &free_col in &free_cols {
+            let mut vec = vec![T::zero(); rref.cols];
+            vec[free_col] = T::one();
+
+            for (j, &is_pivot) in pivots.iter().enumerate() {
+                if is_pivot {
+                    if let Some(row) = pivot_rows[j] {
+                        let val = rref._at(row, free_col).clone();
+                        vec[j] = T::zero() - val;
+                    }
+                }
+            }
+
+            basis.push(vec);
+        }
+
+        MatrixGen {
+            rows: rref.cols,
+            cols: basis.len(),
+            cells: basis.into_iter().flatten().collect(),
+        }
+    }
+
+    pub fn is_rref(&self) -> bool {
+        let mut lead = None;
+
+        for i in 0..self.rows {
+            let row = &self.cells[i * self.cols..(i + 1) * self.cols];
+            let pivot_col_opt = row.iter().position(|x| *x != T::zero());
+
+            match pivot_col_opt {
+                None => {
+                    for r in i + 1..self.rows {
+                        let next_row = &self.cells[r * self.cols..(r + 1) * self.cols];
+                        if next_row.iter().any(|x| *x != T::zero()) {
+                            return false;
+                        }
+                    }
+                    break;
+                }
+                Some(pivot_col) => {
+                    if let Some(prev_lead) = lead {
+                        if pivot_col <= prev_lead {
+                            return false;
+                        }
+                    }
+                    lead = Some(pivot_col);
+
+                    if row[pivot_col] != T::one() {
+                        return false;
+                    }
+
+                    for r in 0..self.rows {
+                        if r != i && self._at(r, pivot_col) != T::zero() {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+        true
     }
 
     pub fn identity(n: usize) -> MatrixGen<T> {
