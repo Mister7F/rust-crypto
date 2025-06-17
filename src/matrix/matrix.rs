@@ -1,6 +1,3 @@
-use crate::matrix::matrix_gen::GenElement;
-use std::ops;
-
 pub trait Matrix<T>
 where
     Self: Sized,
@@ -20,19 +17,3 @@ where
     fn transpose(&self) -> Self;
     fn at(&self, row: usize, col: usize) -> T;
 }
-
-// Macro to create the python interface
-// #[macro_export]
-// macro_rules! impl_matrix_pymethods {
-//     ($type:ty, $expression_type: ty) => {
-//         impl Default for $type {
-//             fn default() -> Self {
-//                 Self::new()
-//             }
-//         }
-//         #[pymethods]
-//         impl $type {
-
-//         }
-//     };
-// }

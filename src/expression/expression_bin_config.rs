@@ -6,7 +6,7 @@ use pyo3::prelude::*;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-#[pyclass]
+#[pyclass(subclass)]
 #[derive(Debug, Clone)]
 pub struct ExpressionBinConfig {
     pub variables: Arc<Mutex<Vec<String>>>,
@@ -29,7 +29,7 @@ impl ExpressionConfig<ExpressionBin> for ExpressionBinConfig {
                 variables.len() - 1
             });
 
-        let mut coeffs = vec![0u64; (index / 64)];
+        let mut coeffs = vec![0u64; index / 64];
         coeffs.push(1u64 << (index % 64));
         ExpressionBin::new(coeffs, false, &self.clone())
     }

@@ -6,6 +6,17 @@ from utils import assert_raises
 
 print("Start benchmark...")
 
+
+class Test(ExpressionBin):
+    # Should be able to inherits from ExpressionBin
+    pass
+
+
+class Test2(ExpressionBinConfig):
+    # Should be able to inherits from ExpressionBin
+    pass
+
+
 config = ExpressionBinConfig()
 a = config.gen("a")
 b = config.gen("b")

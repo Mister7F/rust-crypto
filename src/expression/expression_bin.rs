@@ -16,7 +16,7 @@ use pyo3::exceptions::PyValueError;
 // --------------------------------------------------
 
 #[derive(Debug, FromPyObject)]
-#[pyclass(frozen)]
+#[pyclass(frozen, subclass)]
 pub struct ExpressionBin {
     // Each element contains 64 variables coefficients, for performance
     coeffs: Vec<u64>,
@@ -109,6 +109,11 @@ impl ExpressionBin {
         Expression::degree(self)
     }
 
+    #[getter]
+    pub fn config(&self) -> ExpressionBinConfig {
+        self.config.clone()
+    }
+
     pub fn var_name(&self) -> Option<String> {
         Expression::var_name(self)
     }
@@ -192,12 +197,12 @@ impl Expression<bool, MatrixBin, ExpressionBinConfig> for ExpressionBin {
     }
 
     fn to_matrix(equations: Vec<&ExpressionBin>) -> (MatrixBin, Vec<bool>) {
-        let cols = equations[0].config.variables.lock().unwrap().len();
-        let stride = cols.div_ceil(64);
+        let ncols = equations[0].config.variables.lock().unwrap().len();
+        let stride = ncols.div_ceil(64);
         (
             MatrixBin {
-                cols,
-                rows: equations.len(),
+                ncols,
+                nrows: equations.len(),
                 cells: equations
                     .iter()
                     .flat_map(|e| {
