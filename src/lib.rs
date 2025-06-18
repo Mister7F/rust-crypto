@@ -25,6 +25,8 @@ pub mod rings {
 
 pub mod utils;
 
+pub mod feal;
+
 #[pyfunction]
 fn example_py_callback(py: Python, a: usize, b: usize, callback: PyObject) -> PyResult<u64> {
     let result = callback
@@ -42,6 +44,8 @@ fn rust_crypto(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(aes::aes_r8faults::aes_r8faults_filter, m)?)?;
     m.add_class::<expression::expression_bin::ExpressionBin>()?;
     m.add_class::<expression::expression_bin_config::ExpressionBinConfig>()?;
+    m.add_function(wrap_pyfunction!(feal::feal_encrypt, m)?)?;
+    m.add_function(wrap_pyfunction!(feal::py_feal_break_6_rounds, m)?)?;
     m.add_class::<matrix::matrix_bin::MatrixBin>()?;
     // m.add_class::<matrix::matrix::Matrix<BigInt>>()?;
     Ok(())
