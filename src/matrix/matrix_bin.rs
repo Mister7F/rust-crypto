@@ -321,7 +321,8 @@ impl Matrix<bool> for MatrixBin {
             nrows: mat.ncols,
             ncols: nullity,
             cells: nullspace_cells,
-        })
+        }
+        .transpose())
     }
 
     fn identity(n: usize) -> Self {
@@ -500,7 +501,7 @@ mod tests {
             vec![vec![true, false, true], vec![false, true, true]]
         );
         let kernel = reduced_row_echelon_form.right_kernel_matrix().unwrap();
-        assert_eq!(kernel.to_list(), vec![vec![true], vec![true], vec![true]]);
+        assert_eq!(kernel.to_list(), vec![vec![true, true, true]]);
 
         assert!(!row_echelon_form.is_rref());
         assert!(reduced_row_echelon_form.is_rref());
@@ -518,7 +519,7 @@ mod tests {
             vec![vec![true, true, false], vec![false, false, true]]
         );
         let kernel = reduced_row_echelon_form.right_kernel_matrix().unwrap();
-        assert_eq!(kernel.to_list(), vec![vec![true], vec![true], vec![false]]);
+        assert_eq!(kernel.to_list(), vec![vec![true, true, false]]);
 
         assert!(!row_echelon_form.is_rref());
         assert!(reduced_row_echelon_form.is_rref());
@@ -541,7 +542,7 @@ mod tests {
             ]
         );
         let kernel = reduced_row_echelon_form.right_kernel_matrix().unwrap();
-        assert_eq!(kernel.to_list(), vec![vec![true], vec![true], vec![false]]);
+        assert_eq!(kernel.to_list(), vec![vec![true, true, false]]);
 
         assert!(!m.is_rref());
         assert!(reduced_row_echelon_form.is_rref());
@@ -566,7 +567,7 @@ mod tests {
             ]
         );
         let kernel = reduced_row_echelon_form.right_kernel_matrix().unwrap();
-        assert_eq!(kernel.to_list(), vec![vec![true], vec![true], vec![false]]);
+        assert_eq!(kernel.to_list(), vec![vec![true, true, false]]);
 
         assert!(!m.is_rref());
         assert!(reduced_row_echelon_form.is_rref());
