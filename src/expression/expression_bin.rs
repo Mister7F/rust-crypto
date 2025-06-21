@@ -22,6 +22,7 @@ pub struct ExpressionBin {
     coeffs: Vec<u64>,
     constant: bool,
     config: ExpressionBinConfig,
+    var_name: Option<String>,
 }
 
 #[pymethods]
@@ -32,6 +33,7 @@ impl ExpressionBin {
             coeffs,
             constant,
             config: config.clone(),
+            var_name: None,
         }
     }
 
@@ -54,6 +56,7 @@ impl ExpressionBin {
                         coeffs: self.coeffs.clone(),
                         constant: self.constant,
                         config: self.config.clone(),
+                        var_name: None,
                     }
                 }
             }
@@ -88,6 +91,7 @@ impl ExpressionBin {
             coeffs: self.coeffs.clone(),
             constant: self.constant,
             config: self.config.clone(),
+            var_name: None,
         })
     }
 
@@ -170,6 +174,9 @@ impl ExpressionBin {
 
 impl Expression<bool, MatrixBin, ExpressionBinConfig> for ExpressionBin {
     fn var_name(&self) -> Option<String> {
+        if let Some(name) = &self.var_name {
+            return Some(name.clone());
+        }
         if self.constant {
             return None;
         }
@@ -253,6 +260,7 @@ impl ExpressionBin {
             coeffs: new_coeffs,
             constant: self.constant ^ constant,
             config: self.config.clone(),
+            var_name: None,
         }
     }
 
@@ -263,12 +271,14 @@ impl ExpressionBin {
                 coeffs: vec![],
                 constant: self.constant,
                 config: self.config.clone(),
+                var_name: None,
             }
         } else {
             ExpressionBin {
                 coeffs: self.coeffs.clone(),
                 constant: self.constant,
                 config: self.config.clone(),
+                var_name: None,
             }
         }
     }
