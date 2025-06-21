@@ -86,6 +86,15 @@ t = [False, True, True, False, True, True]
 A = MatrixBin.from_list(M)
 assert A.solve_right(t)[0] == [False, False, False, True]
 
+assert int(A[(0, 1)]) == 0
+assert int(A[(1, 1)]) == 1
+assert int(A[(1, 2)]) == 0
+assert int(A[(1, 3)]) == 1
+
+assert A[0] == [True, False, True, False]
+assert A[1] == [True, True, False, True]
+assert A[2] == [True, False, True, True]
+
 random.seed(133337)  # Make solution possible
 M = [[random.randrange(2) for _ in range(2_001)] for _ in range(2_001)]
 t = [random.randrange(2) for _ in range(2_001)]

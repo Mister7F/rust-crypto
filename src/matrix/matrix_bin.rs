@@ -3,6 +3,7 @@ use crate::utils::bits_to_u64;
 use crate::utils::u64_to_bits;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
+use pyo3::types::PyList;
 use pyo3::types::PyType;
 use rayon::prelude::*;
 use std::ops;
@@ -47,6 +48,10 @@ impl MatrixBin {
         }
     }
 
+    pub fn __len__(&self) -> usize {
+        self.nrows
+    }
+
     pub fn at(&self, row: usize, col: usize) -> bool {
         Matrix::at(self, row, col)
     }
@@ -64,8 +69,15 @@ impl MatrixBin {
         self.ncols
     }
 
-    pub fn __getitem__(&self, pos: (usize, usize)) -> bool {
-        self.at(pos.0, pos.1)
+    pub fn __getitem__(&self, pos: Index) -> ElementOrRow {
+        match pos {
+            Index::XY((row, col)) => ElementOrRow::Element(self.at(row, col)),
+            Index::Int(row) => ElementOrRow::Row(self.line(row)),
+        }
+    }
+
+    pub fn line(&self, line_i: usize) -> Vec<bool> {
+        (0..self.ncols).map(|x| self.at(line_i, x)).collect()
     }
 
     pub fn echelon_form(
@@ -412,6 +424,18 @@ impl Matrix<bool> for MatrixBin {
         }
         ((self.cells[cell_idx] >> bit_pos) & 1) == 1
     }
+}
+
+#[derive(FromPyObject)]
+pub enum Index {
+    Int(usize),
+    XY((usize, usize)),
+}
+
+#[derive(FromPyObject, IntoPyObject)]
+pub enum ElementOrRow {
+    Element(bool),
+    Row(Vec<bool>),
 }
 
 impl MatrixBin {
