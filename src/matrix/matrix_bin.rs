@@ -162,7 +162,7 @@ impl Matrix<bool> for MatrixBin {
     }
 
     fn solve_right(&self, target: Vec<bool>) -> Result<(Vec<bool>, MatrixBin, usize), String> {
-        let (echelon, target, pivot_map, rank) = self.echelon_form(target).unwrap(); // TODO `?`
+        let (echelon, target, pivot_map, rank) = Matrix::echelon_form(self, target)?;
 
         let n_vars = self.ncols;
         let stride = self.ncols.div_ceil(64);
