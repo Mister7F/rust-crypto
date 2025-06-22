@@ -433,6 +433,15 @@ impl Matrix<bool> for MatrixBin {
         }
         ((self.cells[cell_idx] >> bit_pos) & 1) == 1
     }
+
+    fn new(nrows: usize, ncols: usize) -> Self {
+        let stride = ncols.div_ceil(64);
+        MatrixBin {
+            nrows,
+            ncols,
+            cells: vec![0u64; nrows * stride],
+        }
+    }
 }
 
 #[derive(Debug, FromPyObject)]
@@ -445,18 +454,6 @@ pub enum Index {
 pub enum ElementOrRow {
     Element(bool),
     Row(Vec<bool>),
-}
-
-impl MatrixBin {
-    // TODO: move in Matrix trait
-    pub fn new(nrows: usize, ncols: usize) -> Self {
-        let stride = ncols.div_ceil(64);
-        MatrixBin {
-            nrows,
-            ncols,
-            cells: vec![0u64; nrows * stride],
-        }
-    }
 }
 
 impl ops::Mul<&MatrixBin> for &MatrixBin {

@@ -1,5 +1,7 @@
 use std::ops::{Add, Mul};
 
+use crate::matrix::matrix::Matrix;
+
 pub trait ExpressionConfig<Expression> {
     fn new() -> Self;
 
@@ -12,15 +14,16 @@ pub trait ExpressionConfig<Expression> {
     }
 }
 
-pub trait Expression<T, Matrix, Config>: Add<Self> + Add<T> + Mul<u64>
+pub trait Expression<T, M, Config>: Add<Self> + Add<T> + Mul<u64>
 where
     Self: Sized,
     Config: ExpressionConfig<Self>,
+    M: Matrix<T>,
 {
     fn constant(&self) -> T;
     fn degree(&self) -> u32;
     fn var_name(&self) -> Option<String>;
-    fn to_matrix(equations: Vec<&Self>) -> (Matrix, Vec<T>);
+    fn to_matrix(equations: Vec<&Self>) -> (M, Vec<T>);
     fn bool(&self) -> bool;
 }
 

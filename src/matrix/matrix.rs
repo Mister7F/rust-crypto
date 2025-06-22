@@ -2,9 +2,9 @@ pub trait Matrix<T>
 where
     Self: Sized,
 {
+    fn new(nrows: usize, ncols: usize) -> Self;
     fn from_list(lines: Vec<Vec<T>>) -> Self;
     fn to_list(&self) -> Vec<Vec<T>>;
-
     fn is_rref(&self) -> bool;
     fn solve_right(&self, target: Vec<T>) -> Result<(Vec<T>, Self, usize), String>;
     fn echelon_form(

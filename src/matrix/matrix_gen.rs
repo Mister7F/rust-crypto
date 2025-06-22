@@ -284,23 +284,8 @@ impl<T: GenElement> Matrix<T> for MatrixGen<T> {
     fn at(&self, row: usize, col: usize) -> T {
         self.cells[row * self.cols + col].clone()
     }
-}
 
-impl<T: GenElement> MatrixGen<T> {
-    // TODO: implement `Matrix` trait
-
-    pub fn __add__(&self, rhs: &MatrixGen<T>) -> Result<MatrixGen<T>, String> {
-        self.add(rhs)
-    }
-
-    pub fn __mul__(&self, rhs: &MatrixGen<T>) -> Result<MatrixGen<T>, String> {
-        if self.cols != rhs.rows {
-            return Err("Dimensions not compatible".into());
-        }
-        self.mul(rhs)
-    }
-
-    pub fn new(rows: usize, cols: usize) -> MatrixGen<T> {
+    fn new(rows: usize, cols: usize) -> MatrixGen<T> {
         MatrixGen {
             rows,
             cols,
