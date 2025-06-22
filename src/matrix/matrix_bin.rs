@@ -1,9 +1,8 @@
 use crate::matrix::matrix::Matrix;
 use crate::utils::bits_to_u64;
 use crate::utils::u64_to_bits;
-use pyo3::exceptions::PyValueError;
+use pyo3::exceptions::{PyIndexError, PyValueError};
 use pyo3::prelude::*;
-use pyo3::types::PyList;
 use pyo3::types::PyType;
 use rayon::prelude::*;
 use std::ops;
@@ -57,6 +56,7 @@ impl MatrixBin {
     }
 
     #[getter]
+    #[allow(non_snake_case)]
     pub fn T(&self) -> MatrixBin {
         self.transpose()
     }
@@ -69,10 +69,19 @@ impl MatrixBin {
         self.ncols
     }
 
-    pub fn __getitem__(&self, pos: Index) -> ElementOrRow {
+    pub fn __getitem__(&self, pos: Index) -> PyResult<ElementOrRow> {
         match pos {
-            Index::XY((row, col)) => ElementOrRow::Element(self.at(row, col)),
-            Index::Int(row) => ElementOrRow::Row(self.line(row)),
+            Index::XY((row, col)) => Ok(ElementOrRow::Element(self.at(row, col))),
+            Index::Int(row) => {
+                if row >= self.nrows {
+                    Err(PyIndexError::new_err(format!(
+                        "Index error {} >= {}",
+                        row, self.nrows
+                    )))
+                } else {
+                    Ok(ElementOrRow::Row(self.line(row)))
+                }
+            }
         }
     }
 
@@ -426,13 +435,13 @@ impl Matrix<bool> for MatrixBin {
     }
 }
 
-#[derive(FromPyObject)]
+#[derive(Debug, FromPyObject)]
 pub enum Index {
     Int(usize),
     XY((usize, usize)),
 }
 
-#[derive(FromPyObject, IntoPyObject)]
+#[derive(Debug, FromPyObject, IntoPyObject)]
 pub enum ElementOrRow {
     Element(bool),
     Row(Vec<bool>),

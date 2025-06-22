@@ -1,5 +1,6 @@
 use num_traits::{One, Zero};
 
+use crate::rings::fraction::Fraction;
 use std::ops;
 use std::ops::{Add, Div, Mul, Sub};
 
@@ -14,7 +15,7 @@ pub trait GenElement:  // Avoid repeating all the traits
     + Div<Output = Self>
     + std::iter::Sum<Self>
     + std::fmt::Display
-     + std::cmp::Ord
+    + std::cmp::Ord
     + std::fmt::Debug
 {
 }
@@ -148,49 +149,55 @@ impl<T: GenElement> MatrixGen<T> {
     }
 
     pub fn right_kernel_matrix(&self) -> MatrixGen<T> {
-        assert!(self.is_rref());
+        let mut mat = self.clone();
+        if !self.is_rref() {
+            let zero_vec = vec![T::zero(); self.rows];
+            mat = self.echelon_form(zero_vec).unwrap().0;
+        }
 
-        let zero_vec = vec![T::zero(); self.rows];
+        let mut pivot_col_for_row = vec![None; mat.rows];
+        let mut pivot_row_for_col = vec![None; mat.cols];
 
-        let (rref, _, _) = self.echelon_form(zero_vec).unwrap();
-
-        let mut pivots = vec![false; rref.cols];
-        let mut pivot_rows = vec![None; rref.cols];
-
-        for i in 0..rref.rows {
-            for j in 0..rref.cols {
-                if rref._at(i, j) != T::zero() {
-                    pivots[j] = true;
-                    pivot_rows[j] = Some(i);
+        for r in 0..mat.rows {
+            for c in 0..mat.cols {
+                if mat._at(r, c) != T::zero() {
+                    pivot_col_for_row[r] = Some(c);
+                    pivot_row_for_col[c] = Some(r);
                     break;
                 }
             }
         }
 
-        let free_cols: Vec<usize> = (0..rref.cols).filter(|&j| !pivots[j]).collect();
+        let free_cols: Vec<usize> = (0..mat.cols)
+            .filter(|&c| pivot_row_for_col[c].is_none())
+            .collect();
+
         let mut basis = vec![];
 
         for &free_col in &free_cols {
-            let mut vec = vec![T::zero(); rref.cols];
+            let mut vec = vec![T::zero(); mat.cols];
             vec[free_col] = T::one();
 
-            for (j, &is_pivot) in pivots.iter().enumerate() {
-                if is_pivot {
-                    if let Some(row) = pivot_rows[j] {
-                        let val = rref._at(row, free_col).clone();
-                        vec[j] = T::zero() - val;
+            for r in (0..mat.rows).rev() {
+                if let Some(pivot_col) = pivot_col_for_row[r] {
+                    let mut acc = T::zero();
+                    for c in pivot_col + 1..mat.cols {
+                        acc = acc + mat._at(r, c) * vec[c].clone();
                     }
+                    let pivot_val = mat._at(r, pivot_col);
+                    vec[pivot_col] = (T::zero() - acc) / pivot_val;
                 }
             }
 
             basis.push(vec);
         }
 
-        MatrixGen {
-            rows: rref.cols,
+        (MatrixGen {
+            rows: mat.cols,
             cols: basis.len(),
             cells: basis.into_iter().flatten().collect(),
-        }
+        })
+        .transpose()
     }
 
     pub fn is_rref(&self) -> bool {
@@ -251,6 +258,17 @@ impl<T: GenElement> MatrixGen<T> {
         }
     }
 
+    pub fn transpose(&self) -> MatrixGen<T> {
+        MatrixGen {
+            rows: self.cols,
+            cols: self.rows,
+            cells: (0..self.cols)
+                .map(|c| (0..self.rows).map(move |r| self._at(r, c)))
+                .flatten()
+                .collect(),
+        }
+    }
+
     pub fn from_list(lines: Vec<Vec<T>>) -> Result<Self, String> {
         let cols = lines.iter().map(|l| l.len()).max().unwrap_or(0);
         let rows = lines.len();
@@ -296,7 +314,7 @@ impl<T: GenElement> ops::Mul<&MatrixGen<T>> for &MatrixGen<T> {
     type Output = Result<MatrixGen<T>, String>;
 
     fn mul(self, rhs: &MatrixGen<T>) -> Result<MatrixGen<T>, String> {
-        if self.rows != rhs.cols {
+        if self.cols != rhs.rows {
             return Err("Dimensions not compatible".into());
         }
 
@@ -379,6 +397,84 @@ mod tests {
         assert_eq!(
             a.solve_right(vec![bi("896"), bi("1792")]).unwrap().0,
             vec![bi("32"), bi("96")],
+        );
+    }
+
+    #[test]
+    fn test_matrix_generic_kernel() {
+        let m = MatrixGen::<i64>::from_list(vec![
+            vec![1, 2, 5, 77],
+            vec![3, 4, 7, 11],
+            vec![4, 8, 9, 1],
+        ])
+        .unwrap();
+
+        assert_eq!(
+            m.transpose().to_list(),
+            vec![vec![1, 3, 4], vec![2, 4, 8], vec![5, 7, 9], vec![77, 11, 1],]
+        );
+
+        assert_eq!(m.solve_right(vec![11, 11, 33]).unwrap().0, vec![-8, 7, 1]);
+
+        let m = MatrixGen::<Fraction>::from_list(vec![
+            vec![
+                Fraction::from_str("1").unwrap(),
+                Fraction::from_str("2").unwrap(),
+                Fraction::from_str("5").unwrap(),
+                Fraction::from_str("77").unwrap(),
+            ],
+            vec![
+                Fraction::from_str("3").unwrap(),
+                Fraction::from_str("4").unwrap(),
+                Fraction::from_str("7").unwrap(),
+                Fraction::from_str("11").unwrap(),
+            ],
+            vec![
+                Fraction::from_str("4").unwrap(),
+                Fraction::from_str("8").unwrap(),
+                Fraction::from_str("9").unwrap(),
+                Fraction::from_str("1").unwrap(),
+            ],
+        ])
+        .unwrap();
+
+        let res = m
+            .solve_right(vec![
+                Fraction::from_str("11").unwrap(),
+                Fraction::from_str("11").unwrap(),
+                Fraction::from_str("33").unwrap(),
+            ])
+            .unwrap()
+            .0;
+        assert_eq!(res, vec![-8, 7, 1]);
+        assert_ne!(res, vec![8, 7, 1]);
+        assert_ne!(res, vec![-8, 8, 1]);
+        assert_ne!(res, vec![-8, 7, 2]);
+        assert_ne!(res, vec![-16, 14, 2]);
+
+        let expected = vec![
+            // TODO: make same result as sage math
+            // Sage math in python produce: [-652  -18  307  -11]
+            vec![
+                Fraction::from_str("652/11").unwrap(),
+                Fraction::from_str("18/11").unwrap(),
+                Fraction::from_str("-307/11").unwrap(),
+                Fraction::from_str("11/11").unwrap(),
+            ],
+        ];
+        assert_eq!(m.right_kernel_matrix().to_list(), expected);
+
+        assert_eq!(
+            (&m * &m.right_kernel_matrix().transpose())
+                .unwrap()
+                .to_list(),
+            vec![vec![0], vec![0], vec![0]]
+        );
+        assert_ne!(
+            (&m * &m.right_kernel_matrix().transpose())
+                .unwrap()
+                .to_list(),
+            vec![vec![0], vec![1], vec![0]]
         );
     }
 }

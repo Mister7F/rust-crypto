@@ -95,6 +95,12 @@ assert A[0] == [True, False, True, False]
 assert A[1] == [True, True, False, True]
 assert A[2] == [True, False, True, True]
 
+assert len(A) == 6
+assert list(A) == A.to_list()
+with assert_raises(IndexError, "Index error 7 >= 6"):
+    A[7]
+
+
 random.seed(133337)  # Make solution possible
 M = [[random.randrange(2) for _ in range(2_001)] for _ in range(2_001)]
 t = [random.randrange(2) for _ in range(2_001)]

@@ -20,6 +20,7 @@ pub mod matrix {
     pub mod matrix_gen;
 }
 pub mod rings {
+    pub mod fraction;
     pub mod zmod;
 }
 

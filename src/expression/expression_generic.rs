@@ -285,8 +285,6 @@ impl<T: GenElement> ops::Mul<ExpressionGeneric<T>> for ExpressionGeneric<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     use crate::expression::expression::ExpressionConfig;
     use crate::expression::expression_generic_config::ExpressionGenericConfig;
 
