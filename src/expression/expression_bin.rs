@@ -154,6 +154,13 @@ impl ExpressionBin {
             .join(" + ")
     }
 
+    pub fn __int__(&self) -> PyResult<u8> {
+        if self.degree() != 0 {
+            return Err(PyValueError::new_err("Not a constant"));
+        }
+        Ok(self.constant as u8)
+    }
+
     pub fn __repr__(&self) -> String {
         self.__str__()
     }
