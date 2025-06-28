@@ -1,6 +1,8 @@
 use crate::expression::expression::ExpressionConfig;
 use crate::expression::expression_generic::{ExpressionGeneric, Monomial};
+use crate::matrix::matrix::Matrix;
 use crate::matrix::matrix_gen::GenElement;
+use crate::matrix::matrix_gen::MatrixGen;
 
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -12,7 +14,9 @@ pub struct ExpressionGenericConfig<T> {
     _marker: PhantomData<T>,
 }
 
-impl<T: GenElement> ExpressionConfig<ExpressionGeneric<T>> for ExpressionGenericConfig<T> {
+impl<T: GenElement> ExpressionConfig<ExpressionGeneric<T>, MatrixGen<T>, T>
+    for ExpressionGenericConfig<T>
+{
     fn new() -> Self {
         ExpressionGenericConfig::<T> {
             variables: Arc::new(Mutex::new(vec![])),
@@ -29,6 +33,10 @@ impl<T: GenElement> ExpressionConfig<ExpressionGeneric<T>> for ExpressionGeneric
                 }
             }],
         }
+    }
+
+    fn from_matrix(&self, matrix: MatrixGen<T>, constants: Vec<T>) -> Vec<ExpressionGeneric<T>> {
+        todo!()
     }
 }
 

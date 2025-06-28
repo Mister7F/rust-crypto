@@ -40,6 +40,9 @@ m, t = ExpressionBin.to_matrix([a ^ b, a ^ b ^ 1])
 with assert_raises(ValueError, "Impossible system"):
     m.solve_right(t)
 
+equations = config.from_matrix(m, t)
+assert str(equations) == "[a + b, 1 + a + b]"
+
 
 m, t = ExpressionBin.to_matrix([a ^ b, a ^ 1])
 assert m.solve_right(t)[0] == [True, True]

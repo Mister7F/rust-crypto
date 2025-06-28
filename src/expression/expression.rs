@@ -2,7 +2,7 @@ use std::ops::{Add, Mul};
 
 use crate::matrix::matrix::Matrix;
 
-pub trait ExpressionConfig<Expression> {
+pub trait ExpressionConfig<Expression, Matrix, T> {
     fn new() -> Self;
 
     fn gen(&mut self, name: String) -> Expression;
@@ -12,12 +12,14 @@ pub trait ExpressionConfig<Expression> {
             .map(|i| self.gen(name.as_str().to_owned() + "_" + &i.to_string()))
             .collect()
     }
+
+    fn from_matrix(&self, matrix: Matrix, constants: Vec<T>) -> Vec<Expression>;
 }
 
 pub trait Expression<T, M, Config>: Add<Self> + Add<T> + Mul<u64>
 where
     Self: Sized,
-    Config: ExpressionConfig<Self>,
+    Config: ExpressionConfig<Self, M, T>,
     M: Matrix<T>,
 {
     fn constant(&self) -> T;
@@ -30,7 +32,7 @@ where
 // Macro to create the python interface
 #[macro_export]
 macro_rules! impl_expression_config_pymethods {
-    ($type:ty, $expression_type: ty) => {
+    ($type:ty, $expression_type: ty, $matrix_type: ty, $element_type: ty) => {
         impl Default for $type {
             fn default() -> Self {
                 Self::new()
@@ -54,6 +56,14 @@ macro_rules! impl_expression_config_pymethods {
             #[getter]
             pub fn variables(&self) -> Vec<String> {
                 self.variables.lock().unwrap().to_vec()
+            }
+
+            fn from_matrix(
+                &self,
+                matrix: $matrix_type,
+                constants: Vec<$element_type>,
+            ) -> Vec<$expression_type> {
+                ExpressionConfig::from_matrix(self, matrix, constants)
             }
         }
     };
