@@ -165,6 +165,15 @@ impl ExpressionBin {
         self.__str__()
     }
 
+    pub fn get_coeff(&self, name: String) -> bool {
+        let variables = self.config.variables.lock().unwrap();
+        let idx = variables.iter().position(|n| n == &name);
+        if let Some(idx) = idx {
+            return self.coeffs.get(idx / 64).unwrap_or(&0) >> (idx % 64) & 1 != 0;
+        }
+        false
+    }
+
     #[classmethod]
     pub fn to_matrix(
         _cls: &Bound<PyType>,
@@ -348,6 +357,12 @@ mod tests {
         );
         assert_eq!((c("a") * 1).__str__(), "a");
         assert_eq!((c("a") * 0).__str__(), "0");
+
+        let e = c("a") + c("d") + true;
+        assert_eq!(e.get_coeff("a".into()), true);
+        assert_eq!(e.get_coeff("b".into()), false);
+        assert_eq!(e.get_coeff("c".into()), false);
+        assert_eq!(e.get_coeff("d".into()), true);
     }
 
     #[test]
