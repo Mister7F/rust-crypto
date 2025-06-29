@@ -69,6 +69,10 @@ impl MatrixBin {
         self.ncols
     }
 
+    pub fn is_rref(&self) -> bool {
+        Matrix::is_rref(self)
+    }
+
     pub fn __getitem__(&self, pos: Index) -> PyResult<ElementOrRow> {
         match pos {
             Index::XY((row, col)) => Ok(ElementOrRow::Element(self.at(row, col))),
